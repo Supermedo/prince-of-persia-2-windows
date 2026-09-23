@@ -1,5 +1,7 @@
 # Prince of Persia 2 - native Windows port
 
+[![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-ffdd00?style=flat-square&logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/mohmmadpodt)
+
 `pop2.exe` is the original DOS `PRINCE.EXE`, statically recompiled to C and linked with a small
 Windows runtime.  All game logic, rendering, the intro and the music driver are the original code;
 only the PC hardware (VGA, timer, keyboard, Sound Blaster/AdLib) is replaced natively.
@@ -89,3 +91,8 @@ Coverage tools: `iterate.sh` / `levels.sh` run the game with scripted keys and a
 code entry points hit at runtime that were not yet recompiled; `recomp/scan_prologues.py`
 finds function pointers statically.  Debug env vars: `POP2_KEYS`, `POP2_SHOTS`,
 `POP2_WATCH`, `POP2_FMWAV`, `POP2_SNDLOG`.
+
+## Support
+
+This port is free, and stays that way.  If it brought the game back for you and you would like to
+say thanks, you can [buy me a coffee](https://buymeacoffee.com/mohmmadpodt).
