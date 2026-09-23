@@ -21,6 +21,7 @@ obj_dbg/
 
 # runtime and test artifacts
 pop2.ini
+pop2_config.dat
 *.log
 *.sav
 *.SAV
