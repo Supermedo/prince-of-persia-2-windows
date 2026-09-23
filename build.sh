@@ -24,8 +24,8 @@ for n in pop2 launcher; do
     (cd res && MSYS_NO_PATHCONV=1 "$LLVM/llvm-rc.exe" $ART /fo $n.res $n.rc)
   fi
 done
-"$CC" $OPT obj/*.o res/pop2.res -o pop2.exe -luser32 -lgdi32 -lwinmm -lopengl32 -Wl,/SUBSYSTEM:WINDOWS
+MSYS_NO_PATHCONV=1 "$CC" $OPT obj/*.o res/pop2.res -o pop2.exe -luser32 -lgdi32 -lwinmm -lopengl32 -Wl,/SUBSYSTEM:WINDOWS -Wl,/RELEASE
 if [ ! -f "PoP2 Launcher.exe" ] || [ src/launcher.c -nt "PoP2 Launcher.exe" ] || [ res/launcher.res -nt "PoP2 Launcher.exe" ]; then
-  "$CC" -O2 -w src/launcher.c res/launcher.res -o "PoP2 Launcher.exe" -luser32 -lgdi32 -lshell32 -lole32 -luuid -lcomctl32 -lwinmm -Wl,/SUBSYSTEM:WINDOWS
+  MSYS_NO_PATHCONV=1 "$CC" -O2 -w src/launcher.c res/launcher.res -o "PoP2 Launcher.exe" -luser32 -lgdi32 -lshell32 -lole32 -luuid -lcomctl32 -lwinmm -Wl,/SUBSYSTEM:WINDOWS -Wl,/RELEASE
 fi
 echo built pop2.exe

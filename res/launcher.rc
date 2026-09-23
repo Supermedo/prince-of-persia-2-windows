@@ -17,10 +17,13 @@ BEGIN
   BEGIN
     BLOCK "040904B0"
     BEGIN
+      VALUE "CompanyName", "Supermedo"
       VALUE "FileDescription", "Prince of Persia 2 Launcher"
       VALUE "ProductName", "Prince of Persia 2 - The Shadow and the Flame"
       VALUE "FileVersion", "1.0"
       VALUE "OriginalFilename", "PoP2 Launcher.exe"
+      VALUE "LegalCopyright", "Port code: open source. Game content: (c) its owners, not included."
+      VALUE "Comments", "Launcher for the native Prince of Persia 2 port. github.com/Supermedo/prince-of-persia-2-windows"
     END
   END
   BLOCK "VarFileInfo"

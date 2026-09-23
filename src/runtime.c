@@ -102,6 +102,8 @@ enum { DRV_NONE, DRV_DIGI, DRV_MIDI };
 static uint32_t drv_base[3], drv_size[3];   /* linear address of the driver file's byte 0, file size */
 static int cur_drv_kind;                     /* kind of the most recently opened .DRV */
 static void fm_driver_check(const char *name);
+static int cfg_music_gm;   /* pop2.ini Music=gm: Windows General MIDI instead of FM */
+
 static void note_driver_read(const char *name, uint32_t dst, uint32_t fpos) {
     size_t l = strlen(name);
     if (l < 4 || _stricmp(name + l - 4, ".DRV") != 0) return;
@@ -118,7 +120,7 @@ static void note_driver_read(const char *name, uint32_t dst, uint32_t fpos) {
 static int fm_mode;
 void fm_start(void); void fm_port_write(uint16_t port, uint8_t v); uint8_t fm_port_read(void);   /* sound.c */
 static void fm_driver_check(const char *name) {
-    if (getenv("POP2_NOFM")) return;          /* debug: run the MIDI driver natively instead */
+    if (getenv("POP2_NOFM") || cfg_music_gm) return;   /* General MIDI instead (pop2.ini Music=gm) */
     const SpaceTab *t = NULL;
     for (int i = 0; i < nspaces; i++) if (spaces[i].t->ovl_id == 100) { t = spaces[i].t; break; }
     if (!t || fm_mode) return;
@@ -129,12 +131,21 @@ static void fm_driver_check(const char *name) {
     size_t na = f ? fread(a, 1, sizeof a, f) : 0, nr = g ? fread(r, 1, sizeof r, g) : 0;
     if (f) fclose(f);
     if (g) fclose(g);
-    /* same code as the recompiled driver? (bytes 0..63 are just the card name) */
-    if (na != (size_t)t->size || nr != na || memcmp(a + 64, r + 64, na - 64) != 0) { logmsg("MIDI driver is not the FM driver: General MIDI output\n"); return; }
-    memcpy(MEM + FM_SEG * 16, a, na);
+    /* The recompiled driver IS the game's msb_pro.drv, so that file is the only image allowed to
+     * run here - never whatever MIDI.DRV happens to be.  If the player set the game up for some
+     * other music device, run the FM driver anyway: it ships with the game, the game only calls
+     * it through its fixed entry points, and FM is how this soundtrack is meant to sound. */
+    if (nr != (size_t)t->size) {
+        logmsg("msb_pro.drv missing or not the recompiled version: General MIDI output\n");
+        return;
+    }
+    /* bytes 0..63 are just the card name */
+    if (na != nr || memcmp(a + 64, r + 64, nr - 64) != 0)
+        logmsg("MIDI.DRV is not the FM driver - using the game's own msb_pro.drv (pop2.ini Music=gm for General MIDI)\n");
+    memcpy(MEM + FM_SEG * 16, r, nr);
     int si = 0;
     for (int i = 0; i < nspaces; i++) if (spaces[i].t == t) si = i;
-    for (uint32_t p = 0; p < na; p += 16) para_ovl[FM_SEG + p / 16] = (uint8_t)(si + 1);
+    for (uint32_t p = 0; p < nr; p += 16) para_ovl[FM_SEG + p / 16] = (uint8_t)(si + 1);
     fm_mode = 1;
     fm_start();
     logmsg("FM driver: running recompiled driver code with OPL2 emulation\n");
@@ -359,9 +370,9 @@ static LRESULT CALLBACK wndproc(HWND h, UINT m, WPARAM w, LPARAM l) {
         BYTE ks[256]; WORD ch = 0; GetKeyboardState(ks);
         ks[VK_MENU] = ks[VK_LMENU] = ks[VK_RMENU] = 0;        /* Alt never changes the character */
         int asc = key_ascii((UINT)w, (l >> 16) & 0xFF, ks);
-        /* Alt+key has no ASCII code, as from a PC BIOS.  Ask the keyboard itself: the per-window
-         * key state can still say "Alt down" when Alt was released over another window (Alt+Tab). */
-        if ((GetAsyncKeyState(VK_MENU) & 0x8000) && (m == WM_SYSKEYDOWN)) asc = 0;
+        /* Alt+key has no ASCII code, as from a PC BIOS.  The message itself carries the Alt state
+         * (lParam bit 29), which stays right even when Alt was released over another window. */
+        if (m == WM_SYSKEYDOWN && ((l >> 29) & 1)) asc = 0;
         key_event(vk_to_scan(w, l), 0, asc); return 0; }
     case WM_KEYUP: case WM_SYSKEYUP: key_event(vk_to_scan(w, l), 1, 0); return 0;
     case WM_PAINT: { PAINTSTRUCT ps; BeginPaint(h, &ps); EndPaint(h, &ps); present(); return 0; }
@@ -381,6 +392,8 @@ static void load_settings(void) {
     if (cfg_scale > 8) cfg_scale = 8;
     cfg_controller = GetPrivateProfileIntA("pop2", "Controller", 1, ini);
     cfg_checkpoints = GetPrivateProfileIntA("pop2", "Checkpoints", 0, ini);
+    { char m[16]; GetPrivateProfileStringA("pop2", "Music", "fm", m, sizeof m, ini);
+      cfg_music_gm = _stricmp(m, "gm") == 0 || _stricmp(m, "midi") == 0; }
     cfg_filter = GetPrivateProfileIntA("pop2", "Filter", 0, ini) & 3;
     cfg_aspect = GetPrivateProfileIntA("pop2", "Aspect", 0, ini);
     if (cfg_aspect < 0 || cfg_aspect > 2) cfg_aspect = 0;

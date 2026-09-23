@@ -91,8 +91,8 @@ static void midi_reset_all(void);
  * (recompiled) code at FM_SEG and its port 388h/389h writes land here. */
 void opl_reset(void); void opl_write(int r, int v); int opl_status(void); void opl_render(int16_t *buf, int n, int rate);
 #define FM_RATE 44100
-#define FM_BUFS 6
-#define FM_LEN  512
+#define FM_BUFS 10        /* ~120 ms queued ahead: headroom on slower or busy machines */
+#define FM_LEN  512       /* short blocks, so register writes still land within ~12 ms */
 static CRITICAL_SECTION fm_lock; static int fm_on, fm_index;
 static HWAVEOUT fm_wo; static WAVEHDR fm_hdr[FM_BUFS]; static int16_t fm_buf[FM_BUFS][FM_LEN]; static HANDLE fm_event;
 
@@ -130,7 +130,10 @@ void fm_start(void) {
         waveOutWrite(fm_wo, &fm_hdr[i], sizeof fm_hdr[i]);
     }
     fm_on = 1;
-    CreateThread(NULL, 0, fm_thread, NULL, 0, NULL);
+    {   /* the mixer must not lose against the game thread, or the music breaks up */
+        HANDLE th = CreateThread(NULL, 0, fm_thread, NULL, 0, NULL);
+        if (th) { SetThreadPriority(th, THREAD_PRIORITY_ABOVE_NORMAL); CloseHandle(th); }
+    }
     logmsg("FM synthesis started\n");
 }
 void fm_port_write(uint16_t port, uint8_t v) {

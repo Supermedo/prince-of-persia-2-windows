@@ -15,10 +15,13 @@ BEGIN
   BEGIN
     BLOCK "040904B0"
     BEGIN
+      VALUE "CompanyName", "Supermedo"
       VALUE "FileDescription", "Prince of Persia 2 (native port)"
       VALUE "ProductName", "Prince of Persia 2 - The Shadow and the Flame"
       VALUE "FileVersion", "1.0"
       VALUE "OriginalFilename", "pop2.exe"
+      VALUE "LegalCopyright", "Port code: open source. Game content: (c) its owners, not included."
+      VALUE "Comments", "Static recompilation of the DOS game; requires your own copy. github.com/Supermedo/prince-of-persia-2-windows"
     END
   END
   BLOCK "VarFileInfo"

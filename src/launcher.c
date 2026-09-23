@@ -10,9 +10,9 @@
 #include <stdio.h>
 #include <string.h>
 
-enum { ID_DIR = 101, ID_BROWSE, ID_FULL, ID_SCALE, ID_PAD, ID_PADSTAT, ID_LEVEL, ID_PLAY, ID_CONTROLS, ID_SHORTCUT, ID_TIMER, ID_FILTER, ID_ASPECT, ID_CP };
+enum { ID_DIR = 101, ID_BROWSE, ID_FULL, ID_SCALE, ID_PAD, ID_PADSTAT, ID_LEVEL, ID_PLAY, ID_CONTROLS, ID_SHORTCUT, ID_TIMER, ID_FILTER, ID_ASPECT, ID_CP, ID_MUSIC };
 
-static HWND hwnd, h_dir, h_full, h_scale, h_pad, h_padstat, h_level, h_play, h_filter, h_aspect, h_cp;
+static HWND hwnd, h_dir, h_full, h_scale, h_pad, h_padstat, h_level, h_play, h_filter, h_aspect, h_cp, h_music;
 static HFONT font, font_big;
 static HBITMAP banner;
 static char ini[MAX_PATH], exe_dir[MAX_PATH];
@@ -80,6 +80,7 @@ static void save_settings(void) {
     snprintf(v, sizeof v, "%d", (int)SendMessageA(h_aspect, CB_GETCURSEL, 0, 0));
     WritePrivateProfileStringA("pop2", "Aspect", v, ini);
     WritePrivateProfileStringA("pop2", "Checkpoints", SendMessageA(h_cp, BM_GETCHECK, 0, 0) == BST_CHECKED ? "1" : "0", ini);
+    WritePrivateProfileStringA("pop2", "Music", SendMessageA(h_music, CB_GETCURSEL, 0, 0) == 1 ? "gm" : "fm", ini);
 }
 
 static void play(void) {
@@ -176,9 +177,11 @@ static void build(void) {
     ctl("BUTTON", "Controller", BS_GROUPBOX, 288, y, 216, 88, 0);
     h_pad = ctl("BUTTON", "Use game controller", BS_AUTOCHECKBOX | WS_TABSTOP, 300, y + 24, 196, 22, ID_PAD);
     h_padstat = ctl("STATIC", "", 0, 300, y + 48, 200, 36, ID_PADSTAT);
-    ctl("BUTTON", "Gameplay", BS_GROUPBOX, 288, y + 96, 216, 54, 0);
+    ctl("BUTTON", "Gameplay", BS_GROUPBOX, 288, y + 96, 216, 90, 0);
     h_cp = ctl("BUTTON", "Extra checkpoints", BS_AUTOCHECKBOX | WS_TABSTOP, 300, y + 120, 196, 22, ID_CP);
-    y += 164;
+    ctl("STATIC", "Music", 0, 300, y + 152, 56, 20, 0);
+    h_music = ctl("COMBOBOX", "", CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP, 356, y + 148, 140, 200, ID_MUSIC);
+    y += 200;
     ctl("STATIC", "Start at", 0, 16, y + 3, 90, 20, 0);
     h_level = ctl("COMBOBOX", "", CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP, 110, y, 220, 300, ID_LEVEL);
     y += 46;
@@ -188,6 +191,8 @@ static void build(void) {
     SendMessageA(h_play, WM_SETFONT, (WPARAM)font_big, TRUE);
 
     for (int s = 1; s <= 6; s++) { char t[32]; snprintf(t, sizeof t, "%dx  (%d x %d)", s, 320 * s, 240 * s); SendMessageA(h_scale, CB_ADDSTRING, 0, (LPARAM)t); }
+    SendMessageA(h_music, CB_ADDSTRING, 0, (LPARAM)"FM (original)");
+    SendMessageA(h_music, CB_ADDSTRING, 0, (LPARAM)"General MIDI");
     SendMessageA(h_level, CB_ADDSTRING, 0, (LPARAM)"Beginning (normal game)");
     for (int l = 1; l <= 14; l++) { char t[48]; snprintf(t, sizeof t, "Level %d  (cheat mode)", l); SendMessageA(h_level, CB_ADDSTRING, 0, (LPARAM)t); }
 
@@ -210,6 +215,8 @@ static void build(void) {
     int as = GetPrivateProfileIntA("pop2", "Aspect", 0, ini); if (as < 0 || as > 2) as = 0;
     SendMessageA(h_filter, CB_SETCURSEL, fi, 0); SendMessageA(h_aspect, CB_SETCURSEL, as, 0);
     SendMessageA(h_cp, BM_SETCHECK, GetPrivateProfileIntA("pop2", "Checkpoints", 0, ini) ? BST_CHECKED : BST_UNCHECKED, 0);
+    { char m[16]; GetPrivateProfileStringA("pop2", "Music", "fm", m, sizeof m, ini);
+      SendMessageA(h_music, CB_SETCURSEL, _stricmp(m, "fm") == 0 ? 0 : 1, 0); }
     update_pad_status();
     SetTimer(hwnd, ID_TIMER, 1000, NULL);
     SetFocus(h_play);
@@ -268,7 +275,7 @@ int WINAPI WinMain(HINSTANCE hi, HINSTANCE hp, LPSTR cmd, int show) {
     wc.hIconSm = (HICON)LoadImageA(hi, MAKEINTRESOURCEA(1), IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), 0);
     RegisterClassExA(&wc);
     DWORD style = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX;
-    RECT r = { 0, 0, S(520), S(BANNER_H + 14 + 40 + 164 + 46 + 34 + 16) };
+    RECT r = { 0, 0, S(520), S(BANNER_H + 14 + 40 + 200 + 46 + 34 + 16) };
     AdjustWindowRect(&r, style, FALSE);
     int ww = r.right - r.left, wh = r.bottom - r.top;
     hwnd = CreateWindowExA(0, "PoP2Launcher", "Prince of Persia 2", style,

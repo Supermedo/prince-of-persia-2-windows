@@ -55,10 +55,20 @@ Cheat mode (the game's own): `pop2.exe MAKINIT` - `pop2.exe MAKINIT LEVEL5` star
 
 ## Sound
 
-- Music: when `MIDI.DRV` is the AdLib / Sound Blaster FM driver (as installed here), the
-  driver's own code runs recompiled and drives an OPL2 (YM3812) emulator (`src/opl.c`).
-  Other MIDI drivers fall back to the Windows General MIDI synth.
+- Music: the game's own Sound Blaster Pro FM driver (`msb_pro.drv`) runs recompiled and drives an
+  OPL2 (YM3812) emulator (`src/opl.c`), so the soundtrack is the real FM one whatever the game's
+  SETUP was configured for.  `Music=gm` in pop2.ini (or the launcher's *Music* box) sends the
+  music to the Windows General MIDI synth instead, which sounds quite different.
 - Effects: `DIGI.DRV` sample playback is replaced by waveOut.
+
+## Antivirus false positives
+
+`pop2.exe` is a large unsigned executable full of machine-translated code, which is exactly the
+shape Microsoft Defender's machine-learning heuristics guess at: some machines report
+`Trojan:Win32/Wacatac` or a similar `!ml` verdict on a freshly downloaded copy, while a scan with
+current signatures finds nothing.  It is a false positive.  Build it yourself from source if you
+would rather not take that on trust, check the SHA-256 published with each release, and report the
+file to https://www.microsoft.com/en-us/wdsi/filesubmission so the verdict gets corrected.
 
 ## Building
 
