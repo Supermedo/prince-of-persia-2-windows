@@ -102,7 +102,7 @@ enum { DRV_NONE, DRV_DIGI, DRV_MIDI };
 static uint32_t drv_base[3], drv_size[3];   /* linear address of the driver file's byte 0, file size */
 static int cur_drv_kind;                     /* kind of the most recently opened .DRV */
 static void fm_driver_check(const char *name);
-static int cfg_music_gm;   /* pop2.ini Music=gm: Windows General MIDI instead of FM */
+static int cfg_sound_keep;  /* pop2.ini Sound=keep: use the game's own SETUP instead of ours */
 
 static void note_driver_read(const char *name, uint32_t dst, uint32_t fpos) {
     size_t l = strlen(name);
@@ -120,7 +120,7 @@ static void note_driver_read(const char *name, uint32_t dst, uint32_t fpos) {
 static int fm_mode;
 void fm_start(void); void fm_port_write(uint16_t port, uint8_t v); uint8_t fm_port_read(void);   /* sound.c */
 static void fm_driver_check(const char *name) {
-    if (getenv("POP2_NOFM") || cfg_music_gm) return;   /* General MIDI instead (pop2.ini Music=gm) */
+    if (getenv("POP2_NOFM")) return;           /* debug: map the music to the Windows MIDI synth */
     const SpaceTab *t = NULL;
     for (int i = 0; i < nspaces; i++) if (spaces[i].t->ovl_id == 100) { t = spaces[i].t; break; }
     if (!t || fm_mode) return;
@@ -157,7 +157,11 @@ static int driver_dispatch(uint16_t seg, uint16_t off) {
         if (drv_base[k] && lin >= drv_base[k] && lin < drv_base[k] + drv_size[k]) {
             if (k == DRV_MIDI && fm_mode) {
                 int fn = AL;
+                uint16_t iax = AX, ibx = BX, icx = CX, idx = DX;
                 call_far(FM_SEG, (uint16_t)(lin - drv_base[k]));      /* driver code returns with RETF itself */
+                if (getenv("POP2_MIDILOG") && fn < 0x80)
+                    logmsg("FMDRV fn %02x: in ax=%04x bx=%04x cx=%04x dx=%04x -> ax=%04x bx=%04x cx=%04x dx=%04x\n",
+                           fn, iax, ibx, icx, idx, AX, BX, CX, DX);
                 if (fn == 1) { WW(FM_SEG, 0x147, 1); WW(FM_SEG, 0x149, 1); }   /* OPL write delays: not needed */
                 return 1;
             }
@@ -392,8 +396,8 @@ static void load_settings(void) {
     if (cfg_scale > 8) cfg_scale = 8;
     cfg_controller = GetPrivateProfileIntA("pop2", "Controller", 1, ini);
     cfg_checkpoints = GetPrivateProfileIntA("pop2", "Checkpoints", 0, ini);
-    { char m[16]; GetPrivateProfileStringA("pop2", "Music", "fm", m, sizeof m, ini);
-      cfg_music_gm = _stricmp(m, "gm") == 0 || _stricmp(m, "midi") == 0; }
+    { char m[16]; GetPrivateProfileStringA("pop2", "Sound", "port", m, sizeof m, ini);
+      cfg_sound_keep = _stricmp(m, "keep") == 0; }
     cfg_filter = GetPrivateProfileIntA("pop2", "Filter", 0, ini) & 3;
     cfg_aspect = GetPrivateProfileIntA("pop2", "Aspect", 0, ini);
     if (cfg_aspect < 0 || cfg_aspect > 2) cfg_aspect = 0;
@@ -942,6 +946,43 @@ void port_out16(uint16_t port, uint16_t v) { port_out8(port, (uint8_t)v); port_o
 static char game_dir[MAX_PATH];
 typedef struct { FILE *f; char name[260]; } DosFile;
 static DosFile files[64];
+/* The port emulates one sound card - a Sound Blaster Pro: FM music through the OPL2 emulator and
+ * digital effects through waveOut.  What the game sends depends on what its own DOS SETUP wrote:
+ * CONFIG.DAT picks the music data (an FM patch bank the game uploads to the driver, then patch
+ * numbers), and MIDI.DRV / DIGI.DRV are whichever drivers SETUP copied.  A copy of the game set
+ * up for anything else therefore sends data its driver never expected, and the music comes out as
+ * a mess.  So serve our own: both drivers ship with every copy, and only the three sound fields
+ * of CONFIG.DAT are touched, in a private copy that leaves the player's file alone.
+ * pop2.ini Sound=keep uses the game's own setup instead. */
+static const char *sound_sub(const char *name) {
+    static char cfg[MAX_PATH]; static int cfg_done;
+    if (cfg_sound_keep) return NULL;
+    if (_stricmp(name, "MIDI.DRV") == 0) return "msb_pro.drv";
+    if (_stricmp(name, "DIGI.DRV") == 0) return "dsb_pro.drv";
+    if (_stricmp(name, "CONFIG.DAT") != 0) return NULL;
+    if (!cfg_done) {
+        cfg_done = 1;
+        char src[MAX_PATH]; snprintf(src, MAX_PATH, "%s\\CONFIG.DAT", game_dir);
+        uint8_t b[64]; size_t n = 0;
+        FILE *f = fopen(src, "rb");
+        if (f) { n = fread(b, 1, sizeof b, f); fclose(f); }
+        if (n == 32) {
+            b[4] = 1; b[5] = 0;            /* digital sound: Sound Blaster */
+            b[6] = 1; b[7] = 0;            /* music: FM (AdLib / Sound Blaster) */
+            b[8] = 0x21; b[9] = 0;         /* both enabled */
+            char exe[MAX_PATH]; GetModuleFileNameA(NULL, exe, MAX_PATH);
+            char *s = strrchr(exe, '\\'); if (s) *s = 0;
+            snprintf(cfg, MAX_PATH, "%s\\pop2_config.dat", exe);
+            FILE *g = fopen(cfg, "wb");
+            if (!g) {                      /* installed somewhere unwritable: keep it in TEMP */
+                char tmp[MAX_PATH];
+                if (GetTempPathA(MAX_PATH, tmp)) { snprintf(cfg, MAX_PATH, "%spop2_config.dat", tmp); g = fopen(cfg, "wb"); }
+            }
+            if (g) { fwrite(b, 1, n, g); fclose(g); } else cfg[0] = 0;
+        }
+    }
+    return cfg[0] ? cfg : NULL;
+}
 static void host_path(uint16_t seg, uint16_t off, char *out) {
     char dos[260]; int i = 0;
     while (i < 255 && RB(seg, (uint16_t)(off + i))) { dos[i] = (char)RB(seg, (uint16_t)(off + i)); i++; }
@@ -951,6 +992,20 @@ static void host_path(uint16_t seg, uint16_t off, char *out) {
     const char *last = p;                       /* keep only the file name: everything lives in the game dir */
     for (const char *q = p; *q; q++) if (*q == '\\' || *q == '/') last = q + 1;
     snprintf(out, MAX_PATH, "%s\\%s", game_dir, last);
+    {   /* always present the sound hardware the port emulates, whatever this copy was set up for */
+        const char *sub = sound_sub(last);
+        if (sub) {
+            char cand[MAX_PATH];
+            if (strchr(sub, '\\')) snprintf(cand, MAX_PATH, "%s", sub);
+            else snprintf(cand, MAX_PATH, "%s\\%s", game_dir, sub);
+            if (GetFileAttributesA(cand) != INVALID_FILE_ATTRIBUTES) {
+                static int said[3];
+                int k = (_stricmp(last, "MIDI.DRV") == 0) ? 0 : (_stricmp(last, "DIGI.DRV") == 0 ? 1 : 2);
+                if (!said[k]++) logmsg("sound: %s served from %s\n", last, cand);
+                strcpy(out, cand);
+            }
+        }
+    }
     /* scripted test runs must never touch the player's saved game: use a separate file */
     size_t n = strlen(last);
     if (getenv("POP2_KEYS") && n > 4 && _stricmp(last + n - 4, ".SAV") == 0) {

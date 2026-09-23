@@ -57,20 +57,16 @@ Cheat mode (the game's own): `pop2.exe MAKINIT` - `pop2.exe MAKINIT LEVEL5` star
 
 ## Sound
 
-- Music: the game's own Sound Blaster Pro FM driver (`msb_pro.drv`) runs recompiled and drives an
-  OPL2 (YM3812) emulator (`src/opl.c`), so the soundtrack is the real FM one whatever the game's
-  SETUP was configured for.  `Music=gm` in pop2.ini (or the launcher's *Music* box) sends the
-  music to the Windows General MIDI synth instead, which sounds quite different.
-- Effects: `DIGI.DRV` sample playback is replaced by waveOut.
+The port emulates one sound card, a Sound Blaster Pro: the game's own FM driver runs recompiled
+and drives an OPL2 (YM3812) emulator (`src/opl.c`), and digital effects play through waveOut.
 
-## Antivirus false positives
-
-`pop2.exe` is a large unsigned executable full of machine-translated code, which is exactly the
-shape Microsoft Defender's machine-learning heuristics guess at: some machines report
-`Trojan:Win32/Wacatac` or a similar `!ml` verdict on a freshly downloaded copy, while a scan with
-current signatures finds nothing.  It is a false positive.  Build it yourself from source if you
-would rather not take that on trust, check the SHA-256 published with each release, and report the
-file to https://www.microsoft.com/en-us/wdsi/filesubmission so the verdict gets corrected.
+The game chooses its music data from `CONFIG.DAT` (an FM patch bank it uploads to the driver, then
+patch numbers) and talks to whatever `MIDI.DRV` and `DIGI.DRV` hold, so a copy set up by the DOS
+SETUP for General MIDI, Roland or the PC speaker would send data the driver never expected and the
+music would come out wrong.  The port therefore serves its own three files - `msb_pro.drv`,
+`dsb_pro.drv` and a private copy of `CONFIG.DAT` with only the three sound fields changed - and
+every install sounds the same.  Your own files are left untouched, and `Sound=keep` in pop2.ini
+uses the game's setup exactly as it stands.
 
 ## Building
 

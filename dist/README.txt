@@ -1,5 +1,5 @@
 ﻿Prince of Persia 2 - The Shadow and the Flame
-Native Windows port  (v1.0.2)
+Native Windows port  (v1.0)
 =============================================
 
 This package is only the port: the Windows program that runs the game.  It
@@ -24,17 +24,6 @@ Settings are kept in pop2.ini next to the launcher.  Windows 10 or 11,
 64-bit; no runtime or redistributable to install.
 
 
-If your antivirus complains
----------------------------
-pop2.exe is a big unsigned program full of machine-translated code, which is
-the shape Defender's machine-learning guesses at: some machines report
-"Trojan:Win32/Wacatac" or another "!ml" verdict on a fresh download, while a
-scan with current signatures finds nothing.  It is a false positive.  You can
-check the SHA-256 published with the release, report the file at
-https://www.microsoft.com/en-us/wdsi/filesubmission so the verdict is
-corrected, or build the program yourself from the source repository.
-
-
 Controls
 --------
   Arrow keys      run, jump (up), crouch (down)        pad: D-pad / stick
@@ -52,15 +41,18 @@ Xbox pads work through XInput; PlayStation, Switch and generic USB pads
 through the Windows joystick interface.
 
 
-Music
------
-The soundtrack is the game's own FM music: the Sound Blaster Pro driver that
-ships with the game runs inside the port, driving an emulated OPL2 chip.  This
-happens whatever your old SETUP chose, so the music sounds right even if the
-game was installed for General MIDI, Roland or the PC speaker.
+Music and sound
+---------------
+The port emulates a Sound Blaster Pro: the game's own FM driver runs inside it,
+driving an emulated OPL2 chip, and the sound effects play as digital samples.
 
-If you would rather hear your Windows General MIDI synth, set Music to
-"General MIDI" in the launcher (Music=gm in pop2.ini).
+It does this whatever your old DOS SETUP chose.  The game decides what music
+data to send from its CONFIG.DAT and talks to whichever MIDI.DRV and DIGI.DRV
+are in the folder, so a copy installed for General MIDI, Roland or the PC
+speaker would send the driver data it cannot play and the music would come out
+wrong.  The port quietly serves its own copies of those files instead; nothing
+in your game folder is modified.  Put Sound=keep in pop2.ini if you would
+rather it used your own setup as it stands.
 
 
 Display

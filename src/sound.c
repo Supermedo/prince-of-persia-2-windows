@@ -187,10 +187,17 @@ void snd_driver_call(int kind) {
     }
     /* MIDI */
     if (fn < 8) {
+        if (fn == 6 && getenv("POP2_MIDILOG")) {      /* debug: what the game uploads through fn 6 */
+            uint32_t a = LIN(ES, BX);
+            logmsg("MIDI fn6 buffer at %04x:%04x len=%02x:", ES, BX, MEM[a]);
+            for (int i = 0; i < 24; i++) logmsg(" %02x", MEM[(a + i) & 0xFFFFF]);
+            logmsg("\n");
+        }
         if (fn == 2 || fn == 4) midi_reset();
         AX = 0; return;
     }
     uint8_t st = (uint8_t)((fn & 0xF0) | (AH & 0x0F));
+    if (getenv("POP2_MIDILOG")) { static int n; if (n++ < 40) logmsg("MIDIEV %02x %02x %02x\n", st, DL & 0x7F, DH & 0x7F); }
     switch (fn & 0xF0) {
     case 0x80: case 0x90: case 0xA0: case 0xB0: case 0xE0: midi_send(st, DL & 0x7F, DH & 0x7F); break;
     case 0xC0: case 0xD0: midi_send(st, DL & 0x7F, 0); break;
