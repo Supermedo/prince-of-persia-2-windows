@@ -1,0 +1,30 @@
+# recompiled game code: generated from your own PRINCE.EXE by recomp/recomp.py
+src/gen/
+
+# artwork taken from the game (res/make_art.py rebuilds it from your copy)
+res/*.ico
+res/*.bmp
+res/*.png
+res/*.res
+
+# scratch
+test/
+*.bmp
+
+# build output
+obj/
+obj_dbg/
+*.o
+*.exe
+*.pdb
+*.res
+
+# runtime and test artifacts
+pop2.ini
+*.log
+*.sav
+*.SAV
+*.wav
+shots/
+missing_entries.txt
+__pycache__/
