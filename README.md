@@ -8,6 +8,15 @@ This repository holds the recompiler, the Windows runtime and the launcher - no 
 artwork.  Everything derived from the game is generated on your machine from your own copy, so you
 need an installed Prince of Persia 2 to build and to play.
 
+## Screenshots
+
+| | |
+|---|---|
+| ![title screen](docs/title.png) | ![sword fight on the rooftops](docs/rooftops.png) |
+| ![the desert fortress](docs/desert.png) | ![the caverns, with the time left shown](docs/caverns.png) |
+
+<p align="center"><img src="docs/launcher.png" width="500" alt="the launcher"></p>
+
 ## Playing
 
 Run **`PoP2 Launcher.exe`**: choose the game folder, fullscreen / window size, controller on/off,
