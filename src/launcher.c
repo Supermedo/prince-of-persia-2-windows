@@ -4,15 +4,17 @@
 #include <windows.h>
 #include <commctrl.h>
 #include <mmsystem.h>
+#include <shellapi.h>
 #include <shlobj.h>
 #include <shobjidl.h>
 #include <objbase.h>
 #include <stdio.h>
 #include <string.h>
 
-enum { ID_DIR = 101, ID_BROWSE, ID_FULL, ID_SCALE, ID_PAD, ID_PADSTAT, ID_LEVEL, ID_PLAY, ID_CONTROLS, ID_SHORTCUT, ID_TIMER, ID_FILTER, ID_ASPECT, ID_CP, ID_MUSIC };
+enum { ID_DIR = 101, ID_BROWSE, ID_FULL, ID_SCALE, ID_PAD, ID_PADSTAT, ID_LEVEL, ID_PLAY, ID_CONTROLS, ID_SHORTCUT, ID_TIMER, ID_FILTER, ID_ASPECT, ID_CP, ID_MUSIC, ID_COFFEE };
 
 static HWND hwnd, h_dir, h_full, h_scale, h_pad, h_padstat, h_level, h_play, h_filter, h_aspect, h_cp, h_music;
+#define COFFEE_URL "https://buymeacoffee.com/mohmmadpodt"
 static HFONT font, font_big;
 static HBITMAP banner;
 static char ini[MAX_PATH], exe_dir[MAX_PATH];
@@ -184,6 +186,7 @@ static void build(void) {
     y += 200;
     ctl("STATIC", "Start at", 0, 16, y + 3, 90, 20, 0);
     h_level = ctl("COMBOBOX", "", CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP, 110, y, 220, 300, ID_LEVEL);
+    ctl("SysLink", "<a href=\"" COFFEE_URL "\">Buy me a coffee</a>", 0, 346, y + 3, 158, 22, ID_COFFEE);
     y += 46;
     ctl("BUTTON", "Controls", BS_PUSHBUTTON | WS_TABSTOP, 16, y, 100, 34, ID_CONTROLS);
     ctl("BUTTON", "Desktop shortcut", BS_PUSHBUTTON | WS_TABSTOP, 124, y, 140, 34, ID_SHORTCUT);
@@ -224,6 +227,13 @@ static void build(void) {
 
 static LRESULT CALLBACK wndproc(HWND h, UINT m, WPARAM w, LPARAM l) {
     switch (m) {
+    case WM_NOTIFY: {            /* the "Buy me a coffee" link */
+        NMHDR *n = (NMHDR *)l;
+        if (n->idFrom == ID_COFFEE && (n->code == NM_CLICK || n->code == NM_RETURN)) {
+            ShellExecuteA(hwnd, "open", COFFEE_URL, NULL, NULL, SW_SHOWNORMAL);
+            return 0;
+        }
+        break; }
     case WM_COMMAND:
         switch (LOWORD(w)) {
         case ID_BROWSE: browse(); return 0;
@@ -257,7 +267,7 @@ static LRESULT CALLBACK wndproc(HWND h, UINT m, WPARAM w, LPARAM l) {
 int WINAPI WinMain(HINSTANCE hi, HINSTANCE hp, LPSTR cmd, int show) {
     (void)hp; (void)cmd;
     CoInitialize(NULL);
-    INITCOMMONCONTROLSEX icc = { sizeof icc, ICC_STANDARD_CLASSES };
+    INITCOMMONCONTROLSEX icc = { sizeof icc, ICC_STANDARD_CLASSES | ICC_LINK_CLASS };
     InitCommonControlsEx(&icc);
     GetModuleFileNameA(NULL, exe_dir, MAX_PATH);
     char *s = strrchr(exe_dir, '\\'); if (s) *s = 0;
