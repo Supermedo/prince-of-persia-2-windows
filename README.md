@@ -1,10 +1,10 @@
-# Prince of Persia 2 — native Windows port
+# Prince of Persia 2 - native Windows port
 
 `pop2.exe` is the original DOS `PRINCE.EXE`, statically recompiled to C and linked with a small
 Windows runtime.  All game logic, rendering, the intro and the music driver are the original code;
 only the PC hardware (VGA, timer, keyboard, Sound Blaster/AdLib) is replaced natively.
 
-This repository holds the recompiler, the Windows runtime and the launcher — no game code, data or
+This repository holds the recompiler, the Windows runtime and the launcher - no game code, data or
 artwork.  Everything derived from the game is generated on your machine from your own copy, so you
 need an installed Prince of Persia 2 to build and to play.
 
@@ -34,7 +34,7 @@ Display (`src/video.c`, OpenGL): filters *Sharp* (sharp-bilinear: crisp, evenly 
 size), *Pixel*, *Soft*, *Smooth HQ* (Scale3x edge smoothing); views *4:3*, *Wide* (stretch) and
 *Wide panorama* (centre kept at 4:3, stretch grows toward the sides).
 
-Extra checkpoints (optional, off by default — tick it in the launcher or set `Checkpoints=1` in
+Extra checkpoints (optional, off by default - tick it in the launcher or set `Checkpoints=1` in
 pop2.ini): out of the box a dead prince goes back to the start of the level, as in the original.
 With the option on, the state is snapshotted the first time the kid stands in each new room, and
 after dying a key press restores it (the remaining time is kept).
@@ -42,7 +42,7 @@ after dying a key press restores it (the remaining time is kept).
 The 75 minute limit behaves as in the original: the clock starts when you reach level 5, Space
 shows the time left, and the game announces it every five minutes and every minute near the end.
 
-Cheat mode (the game's own): `pop2.exe MAKINIT` — `pop2.exe MAKINIT LEVEL5` starts at level 5.
+Cheat mode (the game's own): `pop2.exe MAKINIT` - `pop2.exe MAKINIT LEVEL5` starts at level 5.
 
 ## Sound
 
